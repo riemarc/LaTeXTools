@@ -759,9 +759,11 @@ class make_pdfCommand(sublime_plugin.WindowCommand):
 		# builder_path, even if it was specified in the pref file
 		if builder_name in ['simple', 'traditional', 'script', 'basic']:
 			builder_path = None
+			kwargs = dict()
 		else:
 			# relative to ST packages dir!
 			builder_path = get_setting("builder_path", "", view=view)
+			kwargs = dict(caller=self)
 
 		if builder_path:
 			bld_path = os.path.join(sublime.packages_path(), builder_path)
@@ -796,7 +798,8 @@ class make_pdfCommand(sublime_plugin.WindowCommand):
 			self.tex_base,
 			tex_directives,
 			builder_settings,
-			platform_settings
+			platform_settings,
+            **kwargs
 		)
 
 		# Now get the tex binary path from prefs, change directory to
