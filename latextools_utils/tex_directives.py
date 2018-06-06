@@ -128,6 +128,20 @@ def parse_tex_directives(view_or_path, multi_values=[], key_maps={},
 def get_tex_root(view):
     view_file = view.file_name()
 
+    try:
+        if tex_root_check(view_file):
+            root = view_file
+
+        else:
+            # returns None if tex_root can not be determined
+            root = find_tex_root(os.path.split(view_file)[0])
+
+    except Exception:
+        root = None
+
+    if root is not None:
+        return root
+
     root = None
     directives = parse_tex_directives(view, only_for=['root'])
     try:
@@ -166,3 +180,45 @@ def get_tex_root_from_settings(view):
                     return root_path
 
     return root
+
+
+def tex_root_check(file):
+    with open(file, 'rb') as f:
+        raw = str(f.read())
+
+    # fits my use cases
+    return ("documentclass" in raw and
+            "begin{document}" in raw and
+            "end{document}" in raw)
+
+
+def find_tex_root(dir, kind_depth=0, parent_depth=0):
+    if dir.endswith(os.sep):
+        dir = dir[:-1]
+
+    if kind_depth + parent_depth > 3:
+        return
+
+    files = [dir + os.sep + f for f in os.listdir(dir)]
+    dirs = list()
+
+    for f in files:
+        if not os.path.isdir(f):
+            if f.endswith(".tex") and tex_root_check(f):
+                return f
+
+        else:
+            dirs.append(f)
+
+    for d in dirs:
+        tex_root = find_tex_root(d,
+                                 kind_depth=kind_depth + 1,
+                                 parent_depth=parent_depth)
+
+        if tex_root is not None:
+            return tex_root
+
+    if kind_depth == 0:
+        return find_tex_root(os.path.split(dir)[0],
+                             kind_depth=kind_depth,
+                             parent_depth=parent_depth + 1)
